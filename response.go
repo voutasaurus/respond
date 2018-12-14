@@ -5,16 +5,20 @@ import "net/http"
 type Transformer struct {
 	http.ResponseWriter
 
-	Transform func(b []byte) []byte
+	Transform func(oldBody []byte) (newBody []byte, status int)
 }
 
-func (r *Transformer) Write(b []byte) (int, error) {
-	return r.ResponseWriter.Write(r.transform(b))
+func (t *Transformer) Write(b []byte) (int, error) {
+	return t.ResponseWriter.Write(t.transform(b))
 }
 
-func (r *Transformer) transform(b []byte) []byte {
-	if r.Transform == nil {
+func (t *Transformer) transform(b []byte) []byte {
+	if t.Transform == nil {
 		return b
 	}
-	return r.Transform(b)
+	out, status := t.Transform(b)
+	if status != 0 {
+		t.WriteHeader(status)
+	}
+	return out
 }
